@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     parameters {
-        string(name: 'BRANCH_NAME', defaultValue: 'master', description: 'Git 分支名稱')
+        string(name: 'BRANCH_NAME', defaultValue: 'master', description: '請輸入 Git 分支名稱')
     }
 
     tools {
@@ -10,9 +10,9 @@ pipeline {
     }
 
     environment {
-        IMAGE_NAME = "demo-app-${params.BRANCH_NAME}"
-        CONTAINER_NAME = "demo-container-${params.BRANCH_NAME}"
-        PORT = "${params.BRANCH_NAME == 'master' ? 8080 : (params.BRANCH_NAME == 'develop' ? 8081 : 8089)}"
+        IMAGE_NAME = "demo-app"
+        CONTAINER_NAME = "demo-container"
+        PORT = "8080"
     }
 
     stages {
@@ -34,12 +34,12 @@ pipeline {
             }
         }
 
-        stage('Clean Old Containers and Images') {
+        stage('Clean All Previous') {
             steps {
-                // 停掉同名容器
-                sh "docker ps -a -q --filter name=demo-container- | xargs -r docker rm -f"
-                // 刪掉同名 image
-                sh "docker images -q 'demo-app-*' | xargs -r docker rmi -f || true"
+                sh '''
+                    docker ps -aq --filter name=demo-container | xargs -r docker rm -f
+                    docker images -q demo-app | xargs -r docker rmi -f
+                '''
             }
         }
 
