@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     parameters {
-        string(name: 'BRANCH_NAME', defaultValue: 'master', description: '請輸入 Git 分支名稱')
+        string(name: 'BRANCH_NAME', defaultValue: 'master', description: '請輸入要部署的 Git 分支名稱')
     }
 
     tools {
@@ -16,9 +16,21 @@ pipeline {
     }
 
     stages {
+        stage('Clean Old Container') {
+            steps {
+                sh '''
+                    docker ps -aq --filter name=$CONTAINER_NAME | xargs -r docker rm -f
+                    docker images -q $IMAGE_NAME | xargs -r docker rmi -f
+                '''
+            }
+        }
+
         stage('Checkout') {
             steps {
-                git branch: "${params.BRANCH_NAME}", url: 'https://github.com/gary880306/springboot-docker-jenkins-demo'
+                checkout([$class: 'GitSCM',
+                    branches: [[name: "*/${params.BRANCH_NAME}"]],
+                    userRemoteConfigs: [[url: 'https://github.com/gary880306/springboot-docker-jenkins-demo']]
+                ])
             }
         }
 
@@ -30,22 +42,15 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                sh "docker build -t ${IMAGE_NAME} ."
-            }
-        }
-
-        stage('Clean All Previous') {
-            steps {
-                sh '''
-                    docker ps -aq --filter name=demo-container | xargs -r docker rm -f
-                    docker images -q demo-app | xargs -r docker rmi -f
-                '''
+                sh 'docker build -t $IMAGE_NAME .'
             }
         }
 
         stage('Deploy') {
             steps {
-                sh "docker run -d -p ${PORT}:8080 --name ${CONTAINER_NAME} ${IMAGE_NAME}"
+                sh '''
+                    docker run -d -p $PORT:8080 --name $CONTAINER_NAME $IMAGE_NAME
+                '''
             }
         }
     }
