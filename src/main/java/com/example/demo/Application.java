@@ -12,6 +12,6 @@ public class Application {
 
     @GetMapping("/")
     public String hello() {
-        return "Hello from Docker + Jenkins!";
+        return "Hello Gary!!";
     }
 }
